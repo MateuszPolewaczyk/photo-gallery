@@ -1,0 +1,242 @@
+/* styles */
+body {
+  margin: 0;
+  padding-top: 46px;
+}
+/* navigation bar styles */
+ul.nav {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background-color: #333;
+  position: fixed;
+  top: 0;
+  width: 100%;
+}
+
+ul.nav li {
+  float: left;
+}
+
+ul.nav li a {
+  display: block;
+  color: white;
+  text-align: center;
+  padding: 14px 16px;
+  text-decoration: none;
+}
+
+ul.nav li a:hover:not(.active) {
+  background-color: #111;
+}
+
+.active {
+  background-color: #4CAF50;
+}
+
+.active:hover {
+  background-color: #45a049;
+}
+/* footer */
+.foot {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background-color: #bbbbbb;
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  text-align: center;
+}
+/* image browser bar */
+.search {
+  list-style-type: none;
+  /* margin: 0; */
+  padding: 0;
+  overflow: hidden;
+  background-color: #bbbbbb;
+  position: fixed;
+  top: auto;
+  width: 100%;
+  text-align: center;
+  margin-bottom: 58px;
+}
+/* gallery images */
+div.gallery {
+  margin: 5px;
+  padding: 10px;
+  border: 1px solid #ccc;
+  display: inline-block;
+  width: 202px;
+  background-color: #eeeeee;
+  overflow: hidden;
+}
+
+div.gallery:hover {
+  border: 1px solid #777;
+}
+
+div.gallery img {
+  height: auto;
+}
+
+div.desc {
+  text-align: left;
+}
+/* custom form's styles */
+label {
+  font-family: Calibri, Helvetica, sans-serif;
+  display: inline-block;
+  cursor: pointer;
+  text-shadow: 0 0 1px #fff, 0 0 1px rgba(0,0,0,0.6);
+  position: relative;
+  padding-left: 25px;
+  margin-right: 20px;
+  font-size: 0.9em;
+}
+
+input[type=radio] {
+  display: none;
+}
+
+label:before {
+  content: "";
+  display: inline-block;
+  width: 17px;
+  height: 17px;
+  border-radius: 8.5px;
+  margin-right: 10px;
+  padding: 1px;
+  position: absolute;
+  left: 0;
+  background-color: #fff;
+  box-shadow: inset 0px 0px 2px rgba(0, 0, 0, .7), 0px 0px 2px rgba(255, 255, 255, .8);
+}
+
+input[type=radio]:checked + label:before {
+  content: "•";
+  color: #aaa;
+  font-size: 30px;
+  text-align: center;
+  line-height: 15px;
+}
+
+.form-header {
+  font-size: 24px;
+  margin-left: auto;
+  font-weight: 600;
+  font-family: "Lucida Console", Times, serif;
+}
+
+input[type=text], input[type=password], input[type=email], select {
+  width: 500px;
+  padding: 12px 20px;
+  margin: 8px 0;
+  display: inline-block;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+input[type=submit] {
+  width: 500px;
+  background-color: #4CAF50;
+  color: white;
+  padding: 14px 20px;
+  margin: 8px 0;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+input[type=submit]:hover {
+  background-color: #45a049;
+}
+
+input[type=file] {
+  background-color: #ffffff;
+  /* width: 500px; */
+  border-radius: 4px;
+  padding: 10px 124px 10px 124px;
+  margin: 8px 0;
+  align-items: center;
+  border: 1px solid #ccc;
+}
+
+div.form-group {
+  border-radius: 5px;
+  background-color: #f2f2f2;
+  padding: 20px;
+  width: 500px;
+  margin: auto;
+}
+/* header */
+h1 {
+  font-family: "Lucida Console", monospace;
+  /* text-shadow: 0 0 3px #003300, 0 0 5px #009933; */
+  text-align: center;
+}
+/* alert window */
+.alert {
+  position: fixed;
+  top: 25px;
+  right: 25px;
+  width: 350px;
+  padding: 20px;
+  background-color: #f44336;
+  color: white;
+  z-index: 100;
+  border-radius: 5px;
+}
+
+.success {
+  position: fixed;
+  top: 25px;
+  right: 25px;
+  width: 350px;
+  padding: 20px;
+  background-color: #4CAF50;
+  color: white;
+  z-index: 100;
+  border-radius: 5px;
+}
+
+.closebtn {
+  margin-left: 15px;
+  color: white;
+  font-weight: bold;
+  float: right;
+  font-size: 22px;
+  line-height: 20px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.closebtn:hover {
+  color: black;
+}
+/* tables styles */
+table {
+    font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
+    border-collapse: collapse;
+    width: 100%;
+}
+
+table td, table th {
+    border: 1px solid #ddd;
+    padding: 8px;
+}
+
+table tr:nth-child(even){background-color: #f2f2f2;}
+
+table tr:hover {background-color: #ddd;}
+
+table th {
+    padding-top: 12px;
+    padding-bottom: 12px;
+    text-align: left;
+    background-color: #4CAF50;
+    color: white;
+}
