@@ -1,10 +1,12 @@
 <?php
 //connects with mongodb
 function connectToDatabase() {
-  $connection = new MongoClient();
+  $mongo = new MongoDB\Driver\Manager("mongodb://127.0.0.1:27017", array("username" => "myUserAdmin", "password" => "abc123", "db" => "wai"));
+  $connection = $mongo;
   return $connection;
 }
-//disconnect from mongodb
+//disconnect from mongodb - since I'm using new mongodb driver this is probably unneccesary but
+//I decided to leave it "just in case"
 function disconnectFromDatabase(&$connection) {
   $connection = null;
 }
@@ -23,7 +25,7 @@ function uploadImage($image, $name, $title, $watermark, $public) {
   if (!empty($name) && !empty($title) && !empty($watermark) && is_bool($public)) {
     if (strlen($name) <= 24 && strlen($title) <= 24 && strlen($watermark) <= 32) {
       //declaration of variables
-      $dir =  dirname(__DIR__)."\\photo-gallery\\images\\";
+      $dir =  dirname(__DIR__)."\\photo-gallery\\images\\";//when on linux use "/" instead of "\\"
       $file = $dir . basename($image["name"]);
       $connection = connectToDatabase();
       $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
@@ -85,7 +87,7 @@ function uploadImage($image, $name, $title, $watermark, $public) {
         imagejpeg($thumb, $dir.$thumbnail, 99);
         //add document to database
         $doc = array(
-          "_id" => (string) new MongoId,
+          "_id" => (string) new MongoDB\BSON\ObjectId(),
           "author" => (object)array(
             "name" => $name,
             "userId" => $userId
@@ -99,8 +101,16 @@ function uploadImage($image, $name, $title, $watermark, $public) {
           "public" => (boolean) $public,
           "addedAt" => date(DATE_ATOM)
         );
-        $col = $connection->database->images;
-        $col->insert( $doc );
+        $bulk = new MongoDB\Driver\BulkWrite(['ordered' => true]);
+        $bulk->insert( $doc );
+        $writeConcern = new MongoDB\Driver\WriteConcern(MongoDB\Driver\WriteConcern::MAJORITY, 1000);
+        try {
+          $result = $connection->executeBulkWrite('wai.images', $bulk, $writeConcern);
+        } catch (MongoDB\Driver\Exception\BulkWriteException $e) {
+          // there was to little time to add better exception handling
+          disconnectFromDatabase($connection);
+          return showErrorBox('Upload failed', 'Error occured while saving to database');
+        }
         disconnectFromDatabase($connection);
         //if image is uploaded succesfully redirect to gallery and send info about success
         header('location: /photo-gallery/index.php/gallery?success');
@@ -117,13 +127,15 @@ function uploadImage($image, $name, $title, $watermark, $public) {
 //get all images that are public or belong to currently logged userId
 function getImages() {
   $connection = connectToDatabase();
-  $cond = array('$or' => array(
+  $filter = array('$or' => array(
             array("public" => true),
             array("author.userId" => $_SESSION["userId"])
           ));
-  $query = $connection->database->images->find($cond);
+  $options = array();
+  $query = new \MongoDB\Driver\Query($filter, $options);
+  $docs = $connection->executeQuery('wai.images', $query);
   disconnectFromDatabase($connection);
-  return iterator_to_array($query);
+  return iterator_to_array($docs);
 }
 //show error box
 function showErrorBox($eHead, $eMessage) {
@@ -150,19 +162,29 @@ function createNewUser($email, $login, $pass1, $pass2) {
   if (!empty($email) && !empty($login) && !empty($pass1) && !empty($pass2) && strlen($login) <= 24) {
     if ($pass1 === $pass2) {
       $connection = connectToDatabase();
-      $col = $connection->database->users;
-      $cond = array('login' => $login);
-      $user = $connection->database->users->findOne($cond);
-      if (!!!$user) {
+      $filter = array('login' => $login);
+      $options = array();
+      $query = new \MongoDB\Driver\Query($filter, $options);
+      $user = $connection->executeQuery('wai.users', $query);
+      $user = iterator_to_array($user);
+      if (!!!$user[0]) {
         $hash = password_hash($pass1, PASSWORD_BCRYPT);
         $doc = array(
-          "_id" => (string) new MongoId,
+          "_id" => (string) new MongoDB\BSON\ObjectId(),
           "email_adress" => (string) $email,
           "login" => (string) $login,
           "password" => $hash,
           "addedAt" => date(DATE_ATOM)
         );
-        $col->insert($doc);
+        $bulk = new MongoDB\Driver\BulkWrite(['ordered' => true]);
+        $bulk->insert( $doc );
+        $writeConcern = new MongoDB\Driver\WriteConcern(MongoDB\Driver\WriteConcern::MAJORITY, 1000);
+        try {
+          $result = $connection->executeBulkWrite('wai.users', $bulk, $writeConcern);
+        } catch (MongoDB\Driver\Exception\BulkWriteException $e) {
+          disconnectFromDatabase($connection);
+          return showErrorBox('Register Failed', 'Error occured while saving to database');
+        }
         disconnectFromDatabase($connection);
         loginUser($login, $pass1);
       } else {
@@ -180,13 +202,15 @@ function loginUser($login, $pass) {
   $login = filter_var(trim($login), FILTER_SANITIZE_STRING);
   $pass = filter_var(trim($pass), FILTER_SANITIZE_STRING);
   $connection = connectToDatabase();
-  $cond = array('login' => $login);
-  $col = $connection->database->users;
-  $user = $col->findOne($cond);
-  if ($user["login"] == $login) {
-    if (password_verify($pass, $user['password'])) {
-      $_SESSION['userId'] = $user['_id'];
-      $_SESSION['login'] = $user['login'];
+  $filter = array('login' => $login);
+  $options = array();
+  $query = new \MongoDB\Driver\Query($filter, $options);
+  $user = $connection->executeQuery('wai.users', $query);
+  $user = iterator_to_array($user);
+  if (!!$user[0] && $user[0]->login == $login) {
+    if (password_verify($pass, $user[0]->password)) {
+      $_SESSION['userId'] = $user[0]->_id;
+      $_SESSION['login'] = $user[0]->login;
       header('location: /photo-gallery/index.php?success');
     } else {
       return showErrorBox('Login Failed', 'Incorrect password');
@@ -220,10 +244,12 @@ function removeSelectedImages($images) {
 function getSavedImages() {
   if (isset($_SESSION["saved"]) && count($_SESSION["saved"]) > 0) {
     $connection = connectToDatabase();
-    $cond = array('_id' => array('$in' => $_SESSION["saved"]));
-    $query = $connection->database->images->find($cond);
+    $filter = array('_id' => array('$in' => $_SESSION["saved"]));
+    $options = array();
+    $query = new \MongoDB\Driver\Query($filter, $options);
+    $docs = $connection->executeQuery('wai.images', $query);
     disconnectFromDatabase($connection);
-    return $query;
+    return iterator_to_array($docs);
   } else {
     header("location: /photo-gallery/index.php/gallery");
   }
@@ -231,8 +257,11 @@ function getSavedImages() {
 //send images as an answer to ajax call
 function fetchImages($q) {
   $connection = connectToDatabase();
-  $cond = array('image.title' => array('$regex' => new MongoRegex("/^$q/i")));
-  $query = $connection->database->images->find($cond);
-  return iterator_to_array($query);
+  $filter = array('image.title' => array('$regex' => $regex = new MongoDB\BSON\Regex("^$q", 'i')));
+  $options = array();
+  $query = new \MongoDB\Driver\Query($filter, $options);
+  $docs = $connection->executeQuery('wai.images', $query);
+  disconnectFromDatabase($connection);
+  return iterator_to_array($docs);
 }
 ?>
